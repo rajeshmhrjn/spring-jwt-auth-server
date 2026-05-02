@@ -16,18 +16,22 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
-/**
- * Spring Security configuration for the Auth Server.
- * <p>
- * Key points:
- * - Stateless sessions (no server-side session storage — JWT handles state)
- * - /auth/login is public; everything else requires authentication
- * - In-memory users for demo purposes; replace with a database UserDetailsService in production
- */
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /**
+     * Configures the security filter chain for a stateless JWT-based API.
+     * <p>
+     * Public endpoints (no token required):
+     * - {@code POST /auth/login}    — issues access + refresh tokens
+     * - {@code POST /auth/refresh}  — rotates refresh token and issues new access token
+     * - {@code POST /auth/logout}   — revokes refresh token
+     * - {@code GET  /.well-known/jwks.json} — exposes public key for offline verification
+     * <p>
+     * All other endpoints require a valid Bearer token in the Authorization header.
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -37,10 +41,8 @@ public class SecurityConfig {
                 // Stateless: no HttpSession will be created or used
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // Public: /auth/login and /.well-known/jwks.json — everything else needs authentication
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login").permitAll()
-                        .requestMatchers("/.well-known/jwks.json").permitAll()
+                        .requestMatchers("/auth/login", "/auth/refresh", "/auth/logout","/.well-known/jwks.json").permitAll()
                         .anyRequest().authenticated()
                 );
 
